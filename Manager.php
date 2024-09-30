@@ -5,6 +5,7 @@ class Manager{
     public $conn;
     public $query;
     public $affected_rows;
+    public $error;
 
     function __construct($conn){
         $this->conn = $conn;
@@ -17,11 +18,14 @@ class Manager{
     
     function create($tbl,$data){
         $fields = implode(",", array_keys($data));
+        
         $data_escaped = array_map(function($value){
             return $this->escapeString($value);
         }, $data);
+        
         $values = "'".implode("','",$data_escaped )."'";
         $this->query = "INSERT INTO {$tbl}({$fields}) VALUES({$values})";
+        
         try {
             $result = mysqli_query($this->conn,$this->query);
             if (!$result) {
@@ -32,7 +36,7 @@ class Manager{
                 return true;
             }
         }catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error=$e->getMessage();
             return false;
         }
     }
@@ -54,7 +58,7 @@ class Manager{
             }
             return array();
         } catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error = $e->getMessage();
             return false;
         }
     }
@@ -76,7 +80,7 @@ class Manager{
             }
             return array();
         } catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error = $e->getMessage();
             return false;
         }
     }
@@ -105,12 +109,12 @@ class Manager{
                 throw new Exception(mysqli_error($this->conn));
             }
         } catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error = $e->getMessage();
             return false;
         }
     }
 
-    function delete($tbl,$condition=""){
+    function remove($tbl,$condition=""){
         $this->query = "DELETE FROM {$tbl}";
         if(!empty($condition)){
             $this->query .=" WHERE {$condition}";
@@ -125,7 +129,7 @@ class Manager{
                 throw new Exception(mysqli_error($this->conn));
             }
         } catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error = $e->getMessage();
             return false;
         }
     }
@@ -142,7 +146,7 @@ class Manager{
                 return $result;
             }
         }catch (Exception $e) {
-            echo "Exception occurs: " . $e->getMessage();
+            $this->error = $e->getMessage();
             return false;
         }
     }
