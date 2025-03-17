@@ -45,9 +45,9 @@ In this package,there are two files
         2.associated array of data
         3.criteria for changes in database
 
-# Delete()
+# Remove()
 
-    $result = $model->delete("tableName","condition"); it returns a boolean result
+    $result = $model->remove("tableName","condition"); it returns a boolean result
 
     It take 2 arguments :
         1.tableName
