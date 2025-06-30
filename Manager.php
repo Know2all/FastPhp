@@ -1,14 +1,15 @@
 <?php 
 
-class Manager{
+require_once("DB.php");
 
-    public $conn;
+class Manager extends DB{
+
     public $query;
     public $affected_rows;
     public $error;
 
-    function __construct($conn){
-        $this->conn = $conn;
+    function __construct(){
+        parent::__construct();
     }
 
     function escapeString($string) {
