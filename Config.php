@@ -1,12 +1,25 @@
-<?php 
-    define('SERVER_NAME', 'localhost');
-    define('USER_NAME', 'root');
-    define('USER_PASSWORD', '');
-    define('DATABASE_NAME', 'ecommerce');
+<?php
 
-    $conn = new mysqli(SERVER_NAME, USER_NAME, USER_PASSWORD, DATABASE_NAME);
+    class DB{
 
-    if(!$conn){
-        echo "Failed To Connect";
+        public $conn;
+        public $server_name = "localhost";
+        public $user_name = "root";
+        public $password = "";
+        public $database = "rhino";
+
+        public function __construct(){
+            $this->conn = mysqli_connect(
+                $this->server_name,
+                $this->user_name,
+                $this->password,
+                $this->database
+            );
+            if (!$this->conn) {
+                die("Connection failed: " . mysqli_connect_error());
+            }
+        }
+
     }
+
 ?>
