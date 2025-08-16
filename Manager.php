@@ -1,5 +1,5 @@
 <?php
-require_once("Config.php");
+
 class Manager {
     protected static $conn;
     public $query;
@@ -154,6 +154,7 @@ class Model extends Manager {
         return $instance;
     }
 
+    /** 🔎 Equivalent to Django objects.filter() */
     static function where($conditions = []) {
         $instance = new static();
         $where = self::buildWhere($conditions);
@@ -168,6 +169,7 @@ class Model extends Manager {
         return $results;
     }
 
+    /** 🧩 Equivalent to Django objects.get() */
     static function get($conditions = []) {
         $instance = new static();
         $where = self::buildWhere($conditions);
@@ -179,9 +181,12 @@ class Model extends Manager {
         return null;
     }
 
+    /** 📋 Equivalent to Django objects.all() */
     static function all() {
         return self::where([]);
     }
+
+    /** 🔨 Build WHERE clause from array */
     protected static function buildWhere($conditions) {
         if (empty($conditions)) return "";
         $clauses = [];
@@ -191,6 +196,23 @@ class Model extends Manager {
         }
         return implode(" AND ", $clauses);
     }
+    
+     /** 🔗 Relationships */
+    function hasOne($relatedClass, $foreignKey, $localKey = "id") {
+        $related = new $relatedClass();
+        return $related::get([$foreignKey => $this->{$localKey}]);
+    }
+
+    function hasMany($relatedClass, $foreignKey, $localKey = "id") {
+        $related = new $relatedClass();
+        return $related::where([$foreignKey => $this->{$localKey}]);
+    }
+
+    function belongsTo($relatedClass, $foreignKey, $ownerKey = "id") {
+        $related = new $relatedClass();
+        return $related::get([$ownerKey => $this->{$foreignKey}]);
+    }
+    
 }
 
 
