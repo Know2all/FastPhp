@@ -24,7 +24,7 @@ class Manager {
             $result = mysqli_query(self::$conn, $this->query);
             if (!$result) throw new Exception(mysqli_error(self::$conn));
             $this->affected_rows = mysqli_affected_rows(self::$conn);
-            return $this->affected_rows > 0;
+            return $this->affected_rows > 0 ? mysqli_insert_id(self::$conn) : false;
         } catch (Exception $e) {
             $this->error = $e->getMessage();
             return false;
@@ -96,6 +96,31 @@ class Manager {
 }
 
 class Model extends Manager {
+    /**
+     * Equivalent to Django objects.exclude()
+     * Returns all records NOT matching the given conditions
+     * Usage: Bank::exclude(['status' => 'Deleted'])
+     */
+    static function exclude($conditions = []) {
+        $instance = new static(static::getTableName());
+        if (empty($conditions)) {
+            return $instance->fetchAll($instance->table);
+        }
+        $clauses = [];
+        foreach ($conditions as $key => $value) {
+            $escaped = mysqli_real_escape_string(self::$conn, $value);
+            $clauses[] = "{$key}!='{$escaped}'";
+        }
+        $where = implode(' AND ', $clauses);
+        $rows = $instance->fetchAll($instance->table, $where);
+        $results = [];
+        foreach ($rows as $row) {
+            $obj = new static(static::getTableName());
+            $obj->fill($row);
+            $results[] = $obj;
+        }
+        return $results;
+    }
     protected $table;
     protected $primaryKey = "id";
     protected $columns = [];
@@ -136,7 +161,12 @@ class Model extends Manager {
                 "{$this->primaryKey}='{$this->{$this->primaryKey}}'"
             );
         } else {
-            return $this->create($this->table, $data);
+            $result = $this->create($this->table, $data);
+            if ($result) {
+                $this->{$this->primaryKey} = $result;
+                return $result;
+            }
+            return false;
         }
     }
 
@@ -148,21 +178,24 @@ class Model extends Manager {
     }
 
     static function find($id, $primaryKey = "id") {
-        $instance = new static();
+        $instance = new static(static::getTableName());
         $row = $instance->fetchOne($instance->table, "{$primaryKey}='{$id}'");
-        if ($row) $instance->fill($row);
-        return $instance;
+        if ($row && count($row) > 0) {
+            $instance->fill($row);
+            return $instance;
+        }
+        return null;
     }
 
     /** 🔎 Equivalent to Django objects.filter() */
     static function where($conditions = []) {
-        $instance = new static();
+        $instance = new static(static::getTableName());
         $where = self::buildWhere($conditions);
         $rows = $instance->fetchAll($instance->table, $where);
         
         $results = [];
         foreach ($rows as $row) {
-            $obj = new static();
+            $obj = new static(static::getTableName());
             $obj->fill($row);
             $results[] = $obj;
         }
@@ -171,7 +204,7 @@ class Model extends Manager {
 
     /** 🧩 Equivalent to Django objects.get() */
     static function get($conditions = []) {
-        $instance = new static();
+        $instance = new static(static::getTableName());
         $where = self::buildWhere($conditions);
         $row = $instance->fetchOne($instance->table, $where);
         if ($row) {
@@ -184,6 +217,12 @@ class Model extends Manager {
     /** 📋 Equivalent to Django objects.all() */
     static function all() {
         return self::where([]);
+    }
+
+
+    /** Helper to get table name for static context */
+    protected static function getTableName() {
+        return (new static(""))->table;
     }
 
     /** 🔨 Build WHERE clause from array */
